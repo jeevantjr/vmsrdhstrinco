@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDHS Trincomalee VMS Dashboard</title>
+    <title>RDHS TrincomALEE VMS Dashboard (Live Data)</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Load Lucide Icons -->
@@ -75,7 +75,7 @@
                 GitHub Project
             </a>
         </div>
-        <p class="text-xs text-gray-500 mt-4 italic">Note: The vehicle data below is loaded from an embedded master list.</p>
+        <p class="text-xs text-gray-500 mt-4 italic" id="data-source-note">Note: Fetching vehicle data live from Google Sheet...</p>
     </section>
 
     <!-- Statistics Cards -->
@@ -129,6 +129,15 @@
                     </tr>
                 </thead>
                 <tbody id="vehicleTableBody" class="bg-white divide-y divide-gray-200">
+                    <tr><td colspan="6" class="text-center py-8 text-gray-500">
+                        <div id="loadingIndicator" class="flex items-center justify-center">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-rdhs-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Loading vehicle data from Google Sheet...
+                        </div>
+                    </td></tr>
                     <!-- Data will be inserted here by JavaScript -->
                 </tbody>
             </table>
@@ -146,53 +155,47 @@
         });
 
         let vehicleData = [];
-
-        // --- Embedded CSV Data (Based on user's provided file) ---
-        // Headers: Timestamp,Vehicle_Number,Institution_Name,Institution_Email,Vehicle_Category,Running_Condition,Brand,Model,Year_of_Manufacture,Fuel_Type,Remarks
-        const csvData = `Timestamp,Vehicle_Number,Institution_Name,Institution_Email,Vehicle_Category,Running_Condition,Brand,Model,Year_of_Manufacture,Fuel_Type,Remarks
-24/09/2025 10:07:19,LM 9217,RMSU - Trinco,rmsdtrincomalee@gmail.com,Lorry,Running,Isusu,Doul cap,2015,Diesel,Assign for RMSD
-09/10/2025 15:38:28,LW 1952,Base Hospital - Pulmoddai,basehospital161@gmail.com,Ambulance,Running,Ford,Transit Custom,2018,Diesel,
-09/10/2025 15:59:16,PA 8633,MOH Office - Padavisripura,mohpadavisripura1@gmail.com,Pickup,Running,MITSUBISHI,L.ZDD,2006,Diesel,
-19/10/2025 10:38:08,LW 1991,BH - Kinniya,bhkinniyams@gmail.com,Ambulance,Needs Repair,Mercedes Benz,Sprinter 315 CDI,2019,Diesel,"1. A/C should be repaired, Patient trolley under repair, Siren horn, and some more mechanical faults occurred. Recommended to replace."
-22/10/2025 10:01:02,PF 3058,MOH - Eachchalampathu,Moheachchilampattu@gmail.com,Pickup,Running,TOYOTA,Hillux,Not known,Diesel,
-27/10/2025 20:06:27,LW 1121,DH - Thoppur,Divisionalhospital@gmail.com,Ambulance,Needs Repair,Toyota,Hiace,2018,Diesel,Engine oil leakage and body repairs should be done`;
+        
+        // APPS SCRIPT URL: Updated to use the live deployed endpoint provided by the user.
+        const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_AAkvUgcyUuk_mOhYN5YYVJulx2tv1RwCCrFdaFTY3jw55I17SAR6ZWRccuaaOhfM/exec"; 
+        
+        const dataNote = document.getElementById('data-source-note');
+        const loadingIndicator = document.getElementById('loadingIndicator');
 
         /**
-         * Simple CSV parser to handle embedded data.
-         * Note: This is simplified and assumes quotes around multi-line/comma-containing fields.
+         * Initializes data by fetching from Google Apps Script endpoint.
          */
-        function parseCSV(csvText) {
-            const rows = csvText.trim().split('\n');
-            if (rows.length === 0) return [];
-
-            const headers = rows[0].split(',').map(h => h.trim());
-            const data = [];
-
-            for (let i = 1; i < rows.length; i++) {
-                // Simplified split: handles quoted strings but might break on complex CSV structures
-                const values = rows[i].match(/(?:"[^"]*"|[^,])+/g);
-                if (values && values.length === headers.length) {
-                    let record = {};
-                    values.forEach((v, index) => {
-                        // Clean up quotes from quoted fields
-                        record[headers[index]] = v.trim().replace(/^"|"$/g, '').replace(/\\n/g, '\n');
-                    });
-                    data.push(record);
-                } else {
-                     console.warn(`Skipping malformed row ${i+1}: ${rows[i]}`);
+        async function initializeData() {
+            try {
+                // Fetch data from the deployed Apps Script URL
+                const response = await fetch(GOOGLE_APPS_SCRIPT_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-            }
-            return data;
-        }
+                
+                const rawData = await response.json();
 
-        /**
-         * Initializes data and renders the dashboard.
-         */
-        function initializeData() {
-            vehicleData = parseCSV(csvData);
-            renderStats(vehicleData);
-            populateFilters(vehicleData);
-            renderTable(vehicleData);
+                // Assuming the Apps Script returns an array of objects
+                vehicleData = rawData; 
+                
+                if (vehicleData && vehicleData.length > 0) {
+                    renderStats(vehicleData);
+                    populateFilters(vehicleData);
+                    renderTable(vehicleData);
+                    dataNote.textContent = 'Note: Vehicle data successfully loaded live from Google Sheet.';
+                    dataNote.classList.remove('text-gray-500', 'text-red-600', 'font-bold');
+                    dataNote.classList.add('text-green-600');
+                } else {
+                    loadingIndicator.innerHTML = 'No data available from the Google Sheet.';
+                }
+
+            } catch (error) {
+                console.error("Failed to fetch vehicle data:", error);
+                loadingIndicator.innerHTML = `Error loading data. Check console for details. (${error.message})`;
+                dataNote.textContent = 'Note: Failed to load data from Google Sheet. Check console and Apps Script deployment.';
+                dataNote.classList.remove('text-gray-500', 'text-green-600');
+                dataNote.classList.add('text-red-600');
+            }
         }
 
         /**
@@ -200,8 +203,10 @@
          */
         function renderStats(data) {
             const total = data.length;
-            const running = data.filter(v => v.Running_Condition === 'Running').length;
-            const needsRepair = data.filter(v => v.Running_Condition === 'Needs Repair').length;
+            
+            // Note: Keys are converted to safe names by the Apps Script (e.g., RunningCondition)
+            const running = data.filter(v => v.RunningCondition === 'Running').length;
+            const needsRepair = data.filter(v => v.RunningCondition === 'Needs Repair').length;
 
             const stats = [
                 {
@@ -243,14 +248,20 @@
          * Populates the Category filter dropdown dynamically.
          */
         function populateFilters(data) {
-            const categories = [...new Set(data.map(v => v.Vehicle_Category))].sort();
+            // Note: Using the cleaned key from Apps Script (VehicleCategory)
+            const categories = [...new Set(data.map(v => v.VehicleCategory))].sort();
             const filter = document.getElementById('categoryFilter');
 
+            // Clear existing options, keeping "All Categories"
+            filter.innerHTML = '<option value="">All Categories</option>';
+
             categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat;
-                option.textContent = cat;
-                filter.appendChild(option);
+                if (cat) { // Avoid empty/null categories
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    filter.appendChild(option);
+                }
             });
         }
 
@@ -263,11 +274,12 @@
             const condition = document.getElementById('conditionFilter').value;
 
             const filteredData = vehicleData.filter(vehicle => {
-                const matchesSearch = vehicle.Vehicle_Number.toLowerCase().includes(searchTerm) ||
-                                      vehicle.Institution_Name.toLowerCase().includes(searchTerm);
+                // Note: Using the cleaned keys from Apps Script (VehicleNumber, InstitutionName, RunningCondition, VehicleCategory)
+                const matchesSearch = (vehicle.VehicleNumber && vehicle.VehicleNumber.toLowerCase().includes(searchTerm)) ||
+                                      (vehicle.InstitutionName && vehicle.InstitutionName.toLowerCase().includes(searchTerm));
 
-                const matchesCategory = category === "" || vehicle.Vehicle_Category === category;
-                const matchesCondition = condition === "" || vehicle.Running_Condition === condition;
+                const matchesCategory = category === "" || vehicle.VehicleCategory === category;
+                const matchesCondition = condition === "" || vehicle.RunningCondition === condition;
 
                 return matchesSearch && matchesCategory && matchesCondition;
             });
@@ -282,6 +294,10 @@
             const tableBody = document.getElementById('vehicleTableBody');
             tableBody.innerHTML = ''; // Clear existing rows
             const noResults = document.getElementById('noResults');
+            
+            // Hide loading indicator once data is ready or an error occurred
+            if(loadingIndicator) loadingIndicator.style.display = 'none';
+
 
             if (data.length === 0) {
                 noResults.classList.remove('hidden');
@@ -291,26 +307,41 @@
             noResults.classList.add('hidden');
 
             data.forEach(vehicle => {
-                const conditionClass = vehicle.Running_Condition === 'Running'
+                // Note: Using the cleaned key from Apps Script (RunningCondition)
+                const condition = vehicle.RunningCondition || 'N/A';
+                const conditionClass = condition === 'Running'
                     ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800';
+                    : condition === 'Needs Repair'
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-gray-100 text-gray-800';
+                
+                // Note: Using the cleaned keys from Apps Script
+                const vehicleNumber = vehicle.VehicleNumber || 'N/A';
+                const institutionName = vehicle.InstitutionName || 'N/A';
+                const vehicleCategory = vehicle.VehicleCategory || 'N/A';
+                const brand = vehicle.Brand || 'N/A';
+                const model = vehicle.Model || 'N/A';
+                const fuelType = vehicle.FuelType || 'N/A';
+                const yearOfManufacture = vehicle.YearofManufacture || 'N/A';
+                const remarks = vehicle.Remarks || 'N/A';
+                
 
                 const row = `
                     <tr class="hover:bg-gray-50 transition duration-100">
                         <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            ${vehicle.Vehicle_Number}
-                            <div class="text-xs text-gray-500 mt-0.5">${vehicle.Fuel_Type} / ${vehicle.Year_of_Manufacture}</div>
+                            ${vehicleNumber}
+                            <div class="text-xs text-gray-500 mt-0.5">${fuelType} / ${yearOfManufacture}</div>
                         </td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${vehicle.Institution_Name}</td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${vehicle.Vehicle_Category}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${institutionName}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${vehicleCategory}</td>
                         <td class="px-4 py-4 whitespace-nowrap">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${conditionClass}">
-                                ${vehicle.Running_Condition}
+                                ${condition}
                             </span>
                         </td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${vehicle.Brand} - ${vehicle.Model}</td>
-                        <td class="px-4 py-4 text-sm text-gray-600 max-w-xs truncate" title="${vehicle.Remarks}">
-                            ${vehicle.Remarks || 'N/A'}
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${brand} - ${model}</td>
+                        <td class="px-4 py-4 text-sm text-gray-600 max-w-xs truncate" title="${remarks}">
+                            ${remarks}
                         </td>
                     </tr>
                 `;
