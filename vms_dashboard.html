@@ -79,7 +79,12 @@
     </section>
 
     <!-- Statistics Cards -->
-    <section id="stats-container" class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8"></section>
+    <section id="stats-container" class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+        <!-- Default placeholders while loading -->
+        <div class="p-6 rounded-xl shadow-lg bg-gray-100 text-gray-500 border-l-4 border-gray-300 animate-pulse h-28"></div>
+        <div class="p-6 rounded-xl shadow-lg bg-gray-100 text-gray-500 border-l-4 border-gray-300 animate-pulse h-28"></div>
+        <div class="p-6 rounded-xl shadow-lg bg-gray-100 text-gray-500 border-l-4 border-gray-300 animate-pulse h-28"></div>
+    </section>
 
     <!-- Search and Filter Controls -->
     <section class="mb-8 bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-gray-200">
@@ -89,7 +94,7 @@
         </h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <input type="text" id="searchInput" onkeyup="filterVehicles()" placeholder="Search by Vehicle No. or Institution..."
-                   class="p-3 border border-gray-300 rounded-lg focus:ring-rdhs-primary focus:border-rdhs-primary transition duration-150">
+                    class="p-3 border border-gray-300 rounded-lg focus:ring-rdhs-primary focus:border-rdhs-primary transition duration-150">
 
             <select id="categoryFilter" onchange="filterVehicles()"
                     class="p-3 border border-gray-300 rounded-lg focus:ring-rdhs-primary focus:border-rdhs-primary appearance-none bg-white transition duration-150 cursor-pointer">
@@ -156,45 +161,77 @@
 
         let vehicleData = [];
         
-        // APPS SCRIPT URL: Updated to use the live deployed endpoint provided by the user.
+        // APPS SCRIPT URL: Using the live deployed endpoint provided by the user.
         const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_AAkvUgcyUuk_mOhYN5YYVJulx2tv1RwCCrFdaFTY3jw55I17SAR6ZWRccuaaOhfM/exec"; 
         
         const dataNote = document.getElementById('data-source-note');
-        const loadingIndicator = document.getElementById('loadingIndicator');
+        const loadingContainer = document.getElementById('vehicleTableBody').querySelector('tr td');
+        const statsContainer = document.getElementById('stats-container');
 
         /**
          * Initializes data by fetching from Google Apps Script endpoint.
          */
         async function initializeData() {
+            // Clear existing placeholder stats
+            statsContainer.innerHTML = ''; 
+
             try {
                 // Fetch data from the deployed Apps Script URL
                 const response = await fetch(GOOGLE_APPS_SCRIPT_URL);
+                
+                // Handle non-OK responses (e.g., 404, 500)
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(`HTTP error! Status: ${response.status} (${response.statusText || 'Unknown Error'})`);
                 }
                 
                 const rawData = await response.json();
-
-                // Assuming the Apps Script returns an array of objects
-                vehicleData = rawData; 
                 
-                if (vehicleData && vehicleData.length > 0) {
+                // Assuming the Apps Script returns an array of objects
+                // We assume keys are cleaned (e.g., Vehicle_Number -> VehicleNumber, Running_Condition -> RunningCondition)
+                vehicleData = Array.isArray(rawData) ? rawData : []; 
+                
+                if (vehicleData.length > 0) {
                     renderStats(vehicleData);
                     populateFilters(vehicleData);
                     renderTable(vehicleData);
-                    dataNote.textContent = 'Note: Vehicle data successfully loaded live from Google Sheet.';
+                    dataNote.textContent = `Note: Vehicle data successfully loaded live from Google Sheet (${vehicleData.length} records).`;
                     dataNote.classList.remove('text-gray-500', 'text-red-600', 'font-bold');
-                    dataNote.classList.add('text-green-600');
+                    dataNote.classList.add('text-green-600', 'font-semibold');
                 } else {
-                    loadingIndicator.innerHTML = 'No data available from the Google Sheet.';
+                    loadingContainer.innerHTML = 'No data available from the Google Sheet. (Empty array received)';
                 }
 
             } catch (error) {
                 console.error("Failed to fetch vehicle data:", error);
-                loadingIndicator.innerHTML = `Error loading data. Check console for details. (${error.message})`;
+                loadingContainer.innerHTML = `
+                    <div class="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                        <strong>Error loading data.</strong> Please check:
+                        <ul class="list-disc list-inside mt-2 text-left mx-auto max-w-md">
+                            <li>Is your Google Apps Script code correctly returning JSON?</li>
+                            <li>Is the Apps Script deployed as a Web App with access set to <strong>"Anyone"</strong>?</li>
+                            <li>Console output for details: ${error.message}</li>
+                        </ul>
+                    </div>
+                `;
+                // Re-add placeholder stats on error
+                statsContainer.innerHTML = `
+                    <div class="p-6 rounded-xl shadow-lg bg-red-100 text-red-800 border-l-4 border-red-500">
+                        <p class="font-bold">Error</p>
+                        <p class="text-sm">Could not load stats.</p>
+                    </div>
+                    <div class="p-6 rounded-xl shadow-lg bg-red-100 text-red-800 border-l-4 border-red-500">
+                        <p class="font-bold">Error</p>
+                        <p class="text-sm">Could not load stats.</p>
+                    </div>
+                    <div class="p-6 rounded-xl shadow-lg bg-red-100 text-red-800 border-l-4 border-red-500">
+                        <p class="font-bold">Error</p>
+                        <p class="text-sm">Could not load stats.</p>
+                    </div>
+                `;
                 dataNote.textContent = 'Note: Failed to load data from Google Sheet. Check console and Apps Script deployment.';
-                dataNote.classList.remove('text-gray-500', 'text-green-600');
-                dataNote.classList.add('text-red-600');
+                dataNote.classList.remove('text-gray-500', 'text-green-600', 'font-semibold');
+                dataNote.classList.add('text-red-600', 'font-bold');
+                lucide.createIcons(); // Re-render icons on error stats
             }
         }
 
@@ -204,7 +241,7 @@
         function renderStats(data) {
             const total = data.length;
             
-            // Note: Keys are converted to safe names by the Apps Script (e.g., RunningCondition)
+            // Note: Keys are assumed to be cleaned by the Apps Script (e.g., RunningCondition)
             const running = data.filter(v => v.RunningCondition === 'Running').length;
             const needsRepair = data.filter(v => v.RunningCondition === 'Needs Repair').length;
 
@@ -249,19 +286,17 @@
          */
         function populateFilters(data) {
             // Note: Using the cleaned key from Apps Script (VehicleCategory)
-            const categories = [...new Set(data.map(v => v.VehicleCategory))].sort();
+            const categories = [...new Set(data.map(v => v.VehicleCategory).filter(Boolean))].sort();
             const filter = document.getElementById('categoryFilter');
 
             // Clear existing options, keeping "All Categories"
             filter.innerHTML = '<option value="">All Categories</option>';
 
             categories.forEach(cat => {
-                if (cat) { // Avoid empty/null categories
-                    const option = document.createElement('option');
-                    option.value = cat;
-                    option.textContent = cat;
-                    filter.appendChild(option);
-                }
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                filter.appendChild(option);
             });
         }
 
@@ -276,7 +311,7 @@
             const filteredData = vehicleData.filter(vehicle => {
                 // Note: Using the cleaned keys from Apps Script (VehicleNumber, InstitutionName, RunningCondition, VehicleCategory)
                 const matchesSearch = (vehicle.VehicleNumber && vehicle.VehicleNumber.toLowerCase().includes(searchTerm)) ||
-                                      (vehicle.InstitutionName && vehicle.InstitutionName.toLowerCase().includes(searchTerm));
+                                    (vehicle.InstitutionName && vehicle.InstitutionName.toLowerCase().includes(searchTerm));
 
                 const matchesCategory = category === "" || vehicle.VehicleCategory === category;
                 const matchesCondition = condition === "" || vehicle.RunningCondition === condition;
@@ -295,12 +330,17 @@
             tableBody.innerHTML = ''; // Clear existing rows
             const noResults = document.getElementById('noResults');
             
-            // Hide loading indicator once data is ready or an error occurred
-            if(loadingIndicator) loadingIndicator.style.display = 'none';
+            // Hide loading container if data is present
+            if (data.length > 0) {
+                 if (loadingContainer) loadingContainer.style.display = 'none';
+            }
 
 
             if (data.length === 0) {
                 noResults.classList.remove('hidden');
+                // Ensure table body is empty when no results are found
+                if(loadingContainer) loadingContainer.style.display = 'table-cell'; // Show container for no results message
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No vehicles match the current filters.</td></tr>';
                 return;
             }
 
@@ -325,6 +365,9 @@
                 const yearOfManufacture = vehicle.YearofManufacture || 'N/A';
                 const remarks = vehicle.Remarks || 'N/A';
                 
+                // Truncate long remarks for better table display, show full text on hover
+                const truncatedRemarks = remarks.length > 50 ? remarks.substring(0, 47) + '...' : remarks;
+
 
                 const row = `
                     <tr class="hover:bg-gray-50 transition duration-100">
@@ -341,7 +384,7 @@
                         </td>
                         <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${brand} - ${model}</td>
                         <td class="px-4 py-4 text-sm text-gray-600 max-w-xs truncate" title="${remarks}">
-                            ${remarks}
+                            ${truncatedRemarks}
                         </td>
                     </tr>
                 `;
@@ -358,11 +401,6 @@
             document.getElementById('conditionFilter').value = '';
             filterVehicles(); // Rerender with cleared filters
         }
-
-        // Initialize Lucide icons again in case of dynamic content change
-        window.addEventListener('resize', () => {
-            lucide.createIcons();
-        });
 
     </script>
 
