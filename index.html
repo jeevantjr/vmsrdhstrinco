@@ -1,216 +1,339 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RDHS Trincomalee - Vehicle Management System</title>
-  <link rel="manifest" href="manifest.json">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f9fafb;
-      color: #333;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background-color: #005f73;
-      color: white;
-      padding: 15px;
-      text-align: center;
-      font-size: 1.4rem;
-    }
-    main {
-      padding: 20px;
-      max-width: 1000px;
-      margin: auto;
-    }
-    input[type="text"] {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 15px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      margin-bottom: 25px;
-    }
-    th, td {
-      padding: 10px;
-      text-align: left;
-      border-bottom: 1px solid #ddd;
-    }
-    th {
-      background-color: #0a9396;
-      color: white;
-    }
-    tr:hover {
-      background-color: #e0fbfc;
-      cursor: pointer;
-    }
-    .tab-buttons {
-      display: flex;
-      justify-content: space-around;
-      margin-bottom: 20px;
-    }
-    .tab-buttons button {
-      padding: 10px 20px;
-      border: none;
-      background-color: #94d2bd;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .tab-buttons button.active {
-      background-color: #0a9396;
-      color: white;
-    }
-    .hidden {
-      display: none;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDHS Trincomalee VMS Dashboard</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'rdhs-primary': '#10b981', // Emerald Green
+                        'rdhs-dark': '#064e3b',
+                        'card-running': '#d1fae5', // Light Green
+                        'card-repair': '#fee2e2', // Light Red
+                        'card-total': '#e0f2f1', // Light Teal
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for table on desktop */
+        ::-webkit-scrollbar {
+            height: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #9ca3af;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+    </style>
 </head>
-<body>
-  <header>🚗 RDHS Trincomalee Vehicle Management System</header>
-  <main>
-    <div class="tab-buttons">
-      <button id="vehicleTab" class="active">Vehicle Master</button>
-      <button id="expenditureTab">Expenditure View</button>
-    </div>
+<body class="bg-gray-50 text-gray-800 font-sans p-4 sm:p-6 lg:p-8">
 
-    <section id="vehicleSection">
-      <input type="text" id="searchBox" placeholder="Search by Vehicle Number...">
-      <table id="vehicleTable">
-        <thead id="vehicleHead"></thead>
-        <tbody id="vehicleBody"></tbody>
-      </table>
+    <!-- Main Header -->
+    <header class="mb-8">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-rdhs-dark border-b-4 border-rdhs-primary pb-2 flex items-center">
+            <i data-lucide="gauge" class="w-8 h-8 mr-3 text-rdhs-primary"></i>
+            RDHS TRINCOMALEE VMS Dashboard
+        </h1>
+        <p class="mt-2 text-gray-600 text-lg">Vehicle Master List and Operational Status</p>
+    </header>
+
+    <!-- Key Actions & Links (Simulated Backend Interaction) -->
+    <section class="mb-8 bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-rdhs-primary/20">
+        <h2 class="text-xl font-semibold text-rdhs-dark mb-4">Data Management Actions</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Link to Google Form for Expenditure Entry -->
+            <a id="linkGoogleForm" href="https://docs.google.com/forms/d/e/1FAIpQLScP_iU4G_Y87Fv3xI3pQj4p5Qy1pQY7n4x9q0f1R-o7p8XJ7A/viewform" target="_blank"
+               class="flex items-center justify-center p-3 bg-red-600 text-white font-bold rounded-lg shadow-md hover:bg-red-700 transition duration-150 transform hover:scale-[1.02]">
+                <i data-lucide="circle-dollar-sign" class="w-5 h-5 mr-2"></i>
+                Log New Expenditure (Google Form)
+            </a>
+            <!-- Link to Google Sheet for Raw Data View -->
+            <a id="linkGoogleSheet" href="https://docs.google.com/spreadsheets/d/1b9oPZBJ8KcW2HQdmqth9et5uY-1v-qpsWqx9m3kjS5s/edit?usp=sharing" target="_blank"
+               class="flex items-center justify-center p-3 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition duration-150 transform hover:scale-[1.02]">
+                <i data-lucide="database" class="w-5 h-5 mr-2"></i>
+                View Raw Data (Google Sheet)
+            </a>
+            <!-- Link to GitHub Front-end Repo -->
+            <a id="linkGithub" href="https://github.com/jeevantjr/vmsrdhstrinco" target="_blank"
+               class="flex items-center justify-center p-3 bg-gray-700 text-white font-bold rounded-lg shadow-md hover:bg-gray-800 transition duration-150 transform hover:scale-[1.02]">
+                <i data-lucide="github" class="w-5 h-5 mr-2"></i>
+                GitHub Project
+            </a>
+        </div>
+        <p class="text-xs text-gray-500 mt-4 italic">Note: The vehicle data below is loaded from an embedded master list.</p>
     </section>
 
-    <section id="expenditureSection" class="hidden">
-      <h2 id="selectedVehicleTitle">Expenditures</h2>
-      <table id="expenditureTable">
-        <thead id="expHead"></thead>
-        <tbody id="expBody"></tbody>
-      </table>
+    <!-- Statistics Cards -->
+    <section id="stats-container" class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8"></section>
+
+    <!-- Search and Filter Controls -->
+    <section class="mb-8 bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-gray-200">
+        <h2 class="text-xl font-semibold text-rdhs-dark mb-4 flex items-center">
+            <i data-lucide="filter" class="w-5 h-5 mr-2 text-rdhs-primary"></i>
+            Filter & Search
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <input type="text" id="searchInput" onkeyup="filterVehicles()" placeholder="Search by Vehicle No. or Institution..."
+                   class="p-3 border border-gray-300 rounded-lg focus:ring-rdhs-primary focus:border-rdhs-primary transition duration-150">
+
+            <select id="categoryFilter" onchange="filterVehicles()"
+                    class="p-3 border border-gray-300 rounded-lg focus:ring-rdhs-primary focus:border-rdhs-primary appearance-none bg-white transition duration-150 cursor-pointer">
+                <option value="">All Categories</option>
+            </select>
+
+            <select id="conditionFilter" onchange="filterVehicles()"
+                    class="p-3 border border-gray-300 rounded-lg focus:ring-rdhs-primary focus:border-rdhs-primary appearance-none bg-white transition duration-150 cursor-pointer">
+                <option value="">All Conditions</option>
+                <option value="Running">Running</option>
+                <option value="Needs Repair">Needs Repair</option>
+            </select>
+
+            <button onclick="clearFilters()"
+                    class="flex items-center justify-center p-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">
+                <i data-lucide="rotate-ccw" class="w-5 h-5 mr-2"></i>
+                Clear Filters
+            </button>
+        </div>
     </section>
-  </main>
 
-  <script>
-    const apiUrl = 'https://script.google.com/macros/s/AKfycbwkMxUJv5slT2-GtCNzvOc_FPS8uyDv6nU8twkPGGUlVmct21TdXaOvn7EkuvL5EeMZ/exec';
-    let vehicles = [];
-    let expenditures = [];
+    <!-- Vehicle Master List Table -->
+    <section class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="p-4 sm:p-6 bg-gray-100 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-rdhs-dark">Vehicle Master List</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-xl">Vehicle No.</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Institution</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Condition</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand / Model</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-xl">Remarks</th>
+                    </tr>
+                </thead>
+                <tbody id="vehicleTableBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Data will be inserted here by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        <div id="noResults" class="hidden p-8 text-center text-gray-500 italic">No vehicles match the current filters.</div>
+    </section>
 
-    const vehicleTab = document.getElementById('vehicleTab');
-    const expenditureTab = document.getElementById('expenditureTab');
-    const vehicleSection = document.getElementById('vehicleSection');
-    const expenditureSection = document.getElementById('expenditureSection');
-    const searchBox = document.getElementById('searchBox');
-    const selectedVehicleTitle = document.getElementById('selectedVehicleTitle');
-
-    vehicleTab.addEventListener('click', () => {
-      vehicleTab.classList.add('active');
-      expenditureTab.classList.remove('active');
-      vehicleSection.classList.remove('hidden');
-      expenditureSection.classList.add('hidden');
-    });
-
-    expenditureTab.addEventListener('click', () => {
-      expenditureTab.classList.add('active');
-      vehicleTab.classList.remove('active');
-      vehicleSection.classList.add('hidden');
-      expenditureSection.classList.remove('hidden');
-    });
-
-    async function loadData() {
-      try {
-        const response = await fetch(apiUrl);
-        const data = await response.json();
-
-        vehicles = data.Vehicle_Master || [];
-        expenditures = data.Expenditures || [];
-
-        renderVehicleTable(vehicles);
-      } catch (err) {
-        console.error('Error loading data:', err);
-      }
-    }
-
-    function renderVehicleTable(data) {
-      const tableHead = document.getElementById('vehicleHead');
-      const tableBody = document.getElementById('vehicleBody');
-      tableHead.innerHTML = '';
-      tableBody.innerHTML = '';
-
-      if (data.length === 0) return;
-
-      const headers = Object.keys(data[0]);
-      const headRow = document.createElement('tr');
-      headers.forEach(h => {
-        const th = document.createElement('th');
-        th.textContent = h;
-        headRow.appendChild(th);
-      });
-      tableHead.appendChild(headRow);
-
-      data.forEach(row => {
-        const tr = document.createElement('tr');
-        tr.addEventListener('click', () => showExpenditures(row.Vehicle_Number));
-        headers.forEach(h => {
-          const td = document.createElement('td');
-          td.textContent = row[h];
-          tr.appendChild(td);
+    <!-- JavaScript for Data Handling and Interactivity -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize Lucide icons
+            lucide.createIcons();
+            // Load and process data
+            initializeData();
         });
-        tableBody.appendChild(tr);
-      });
-    }
 
-    function showExpenditures(vehicleNumber) {
-      const expTableHead = document.getElementById('expHead');
-      const expTableBody = document.getElementById('expBody');
-      expTableHead.innerHTML = '';
-      expTableBody.innerHTML = '';
-      selectedVehicleTitle.textContent = `Expenditures for Vehicle: ${vehicleNumber}`;
+        let vehicleData = [];
 
-      const filtered = expenditures.filter(e => e.Vehicle_Number === vehicleNumber);
-      if (filtered.length === 0) {
-        expTableBody.innerHTML = '<tr><td colspan="5">No expenditure records found.</td></tr>';
-      } else {
-        const headers = Object.keys(filtered[0]);
-        const headRow = document.createElement('tr');
-        headers.forEach(h => {
-          const th = document.createElement('th');
-          th.textContent = h;
-          headRow.appendChild(th);
+        // --- Embedded CSV Data (Based on user's provided file) ---
+        // Headers: Timestamp,Vehicle_Number,Institution_Name,Institution_Email,Vehicle_Category,Running_Condition,Brand,Model,Year_of_Manufacture,Fuel_Type,Remarks
+        const csvData = `Timestamp,Vehicle_Number,Institution_Name,Institution_Email,Vehicle_Category,Running_Condition,Brand,Model,Year_of_Manufacture,Fuel_Type,Remarks
+24/09/2025 10:07:19,LM 9217,RMSU - Trinco,rmsdtrincomalee@gmail.com,Lorry,Running,Isusu,Doul cap,2015,Diesel,Assign for RMSD
+09/10/2025 15:38:28,LW 1952,Base Hospital - Pulmoddai,basehospital161@gmail.com,Ambulance,Running,Ford,Transit Custom,2018,Diesel,
+09/10/2025 15:59:16,PA 8633,MOH Office - Padavisripura,mohpadavisripura1@gmail.com,Pickup,Running,MITSUBISHI,L.ZDD,2006,Diesel,
+19/10/2025 10:38:08,LW 1991,BH - Kinniya,bhkinniyams@gmail.com,Ambulance,Needs Repair,Mercedes Benz,Sprinter 315 CDI,2019,Diesel,"1. A/C should be repaired, Patient trolley under repair, Siren horn, and some more mechanical faults occurred. Recommended to replace."
+22/10/2025 10:01:02,PF 3058,MOH - Eachchalampathu,Moheachchilampattu@gmail.com,Pickup,Running,TOYOTA,Hillux,Not known,Diesel,
+27/10/2025 20:06:27,LW 1121,DH - Thoppur,Divisionalhospital@gmail.com,Ambulance,Needs Repair,Toyota,Hiace,2018,Diesel,Engine oil leakage and body repairs should be done`;
+
+        /**
+         * Simple CSV parser to handle embedded data.
+         * Note: This is simplified and assumes quotes around multi-line/comma-containing fields.
+         */
+        function parseCSV(csvText) {
+            const rows = csvText.trim().split('\n');
+            if (rows.length === 0) return [];
+
+            const headers = rows[0].split(',').map(h => h.trim());
+            const data = [];
+
+            for (let i = 1; i < rows.length; i++) {
+                // Simplified split: handles quoted strings but might break on complex CSV structures
+                const values = rows[i].match(/(?:"[^"]*"|[^,])+/g);
+                if (values && values.length === headers.length) {
+                    let record = {};
+                    values.forEach((v, index) => {
+                        // Clean up quotes from quoted fields
+                        record[headers[index]] = v.trim().replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+                    });
+                    data.push(record);
+                } else {
+                     console.warn(`Skipping malformed row ${i+1}: ${rows[i]}`);
+                }
+            }
+            return data;
+        }
+
+        /**
+         * Initializes data and renders the dashboard.
+         */
+        function initializeData() {
+            vehicleData = parseCSV(csvData);
+            renderStats(vehicleData);
+            populateFilters(vehicleData);
+            renderTable(vehicleData);
+        }
+
+        /**
+         * Renders the statistics cards.
+         */
+        function renderStats(data) {
+            const total = data.length;
+            const running = data.filter(v => v.Running_Condition === 'Running').length;
+            const needsRepair = data.filter(v => v.Running_Condition === 'Needs Repair').length;
+
+            const stats = [
+                {
+                    title: 'Total Vehicles',
+                    value: total,
+                    icon: 'car',
+                    color: 'bg-card-total text-teal-800 border-teal-300'
+                },
+                {
+                    title: 'Currently Running',
+                    value: running,
+                    icon: 'check-circle',
+                    color: 'bg-card-running text-green-800 border-green-300'
+                },
+                {
+                    title: 'Needs Immediate Repair',
+                    value: needsRepair,
+                    icon: 'tool',
+                    color: 'bg-card-repair text-red-800 border-red-300'
+                }
+            ];
+
+            const container = document.getElementById('stats-container');
+            container.innerHTML = stats.map(stat => `
+                <div class="p-6 rounded-xl shadow-lg ${stat.color} border-l-4">
+                    <div class="flex items-center justify-between">
+                        <p class="text-sm font-medium opacity-80">${stat.title}</p>
+                        <i data-lucide="${stat.icon}" class="w-6 h-6"></i>
+                    </div>
+                    <p class="text-3xl font-bold mt-2">${stat.value}</p>
+                </div>
+            `).join('');
+
+            // Re-initialize Lucide icons for the new HTML content
+            lucide.createIcons();
+        }
+
+        /**
+         * Populates the Category filter dropdown dynamically.
+         */
+        function populateFilters(data) {
+            const categories = [...new Set(data.map(v => v.Vehicle_Category))].sort();
+            const filter = document.getElementById('categoryFilter');
+
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                filter.appendChild(option);
+            });
+        }
+
+        /**
+         * Filters the vehicle data based on user input and selected filters.
+         */
+        function filterVehicles() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+            const condition = document.getElementById('conditionFilter').value;
+
+            const filteredData = vehicleData.filter(vehicle => {
+                const matchesSearch = vehicle.Vehicle_Number.toLowerCase().includes(searchTerm) ||
+                                      vehicle.Institution_Name.toLowerCase().includes(searchTerm);
+
+                const matchesCategory = category === "" || vehicle.Vehicle_Category === category;
+                const matchesCondition = condition === "" || vehicle.Running_Condition === condition;
+
+                return matchesSearch && matchesCategory && matchesCondition;
+            });
+
+            renderTable(filteredData);
+        }
+
+        /**
+         * Renders the filtered data into the table body.
+         */
+        function renderTable(data) {
+            const tableBody = document.getElementById('vehicleTableBody');
+            tableBody.innerHTML = ''; // Clear existing rows
+            const noResults = document.getElementById('noResults');
+
+            if (data.length === 0) {
+                noResults.classList.remove('hidden');
+                return;
+            }
+
+            noResults.classList.add('hidden');
+
+            data.forEach(vehicle => {
+                const conditionClass = vehicle.Running_Condition === 'Running'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800';
+
+                const row = `
+                    <tr class="hover:bg-gray-50 transition duration-100">
+                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            ${vehicle.Vehicle_Number}
+                            <div class="text-xs text-gray-500 mt-0.5">${vehicle.Fuel_Type} / ${vehicle.Year_of_Manufacture}</div>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${vehicle.Institution_Name}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${vehicle.Vehicle_Category}</td>
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${conditionClass}">
+                                ${vehicle.Running_Condition}
+                            </span>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${vehicle.Brand} - ${vehicle.Model}</td>
+                        <td class="px-4 py-4 text-sm text-gray-600 max-w-xs truncate" title="${vehicle.Remarks}">
+                            ${vehicle.Remarks || 'N/A'}
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        /**
+         * Clears all filters and resets the table.
+         */
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('categoryFilter').value = '';
+            document.getElementById('conditionFilter').value = '';
+            filterVehicles(); // Rerender with cleared filters
+        }
+
+        // Initialize Lucide icons again in case of dynamic content change
+        window.addEventListener('resize', () => {
+            lucide.createIcons();
         });
-        expTableHead.appendChild(headRow);
 
-        filtered.forEach(row => {
-          const tr = document.createElement('tr');
-          headers.forEach(h => {
-            const td = document.createElement('td');
-            td.textContent = row[h];
-            tr.appendChild(td);
-          });
-          expTableBody.appendChild(tr);
-        });
-      }
+    </script>
 
-      expenditureTab.classList.add('active');
-      vehicleTab.classList.remove('active');
-      vehicleSection.classList.add('hidden');
-      expenditureSection.classList.remove('hidden');
-    }
-
-    searchBox.addEventListener('input', e => {
-      const term = e.target.value.toLowerCase();
-      const filtered = vehicles.filter(v => v.Vehicle_Number.toLowerCase().includes(term));
-      renderVehicleTable(filtered);
-    });
-
-    loadData();
-  </script>
 </body>
 </html>
